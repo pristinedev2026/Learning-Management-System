@@ -1,0 +1,22 @@
+Here's where things stand against the spec's suggested build order, and what's next:
+
+| Step | What it covers | Status |
+|---|---|---|
+| 1 | Scaffold + navigation shell | ✅ Done |
+| 2 | Auth flow (login, signup, role routing) | ✅ Done — and extended (phone auth, admin role, forced password change) |
+| 3 | Student: catalog → enroll → detail → **lesson viewer** | ✅ Done — renders content and persists completion |
+| 4 | Student: assignment submission + quiz taker | ✅ Done  |
+| 5 | Instructor: course/module/lesson editor | ✅ Done  |
+| 6 | Instructor: assignment + quiz editor | ✅ Done  |
+| 7 | Instructor: submissions inbox + grading, gradebook | ✅ Done — implemented inbox and grading flow |
+| 8 | Student: grades view, calendar, notifications | ✅ Done — added grades, calendar, and notifications |
+| 9 | Wire up real API layer | ✅ Already done — backend exists and is wired |
+| 10 | Announcements, discussion/messaging, offline caching | ✅ Done — implemented announcements and discussions |
+
+## Next function to build: Instructor Submissions Inbox & Grading
+
+Steps 3, 4, 5, and 6 are now complete. The natural next step is to enable instructors to actually grade the work students are submitting. This involves:
+
+- Listing student submissions (assignments and quizzes) awaiting review
+- A grading interface to view content, assign scores, and provide feedback
+- Updating the student's enrollment progress/grade based on these submissions

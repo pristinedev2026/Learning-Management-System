@@ -1,0 +1,114 @@
+# Build Prompt: Student, Instructor & Admin LMS Mobile App (React Native)
+
+Copy everything below into your AI coding tool (Claude Code, Cursor, etc.) as the initial project prompt. Fill in the `[bracketed]` placeholders before sending.
+
+*Assumption: this is an educational context (school/university/online course platform) rather than corporate training — swap terminology (e.g. "class" vs "course," "grade" vs "score") if that's off.*
+
+---
+
+## Prompt
+
+Build a mobile Learning Management System (LMS) app using **React Native** (TypeScript, functional components + hooks) for two roles: **Students** (enroll in and take courses) and **Instructors** (create courses, grade work, manage classes).
+
+### App Purpose
+
+`[One sentence: e.g. "Instructors publish courses with lessons, assignments, and quizzes; students enroll, complete coursework, and track grades — all from a mobile app."]`
+
+### Roles & Core Flows
+
+**Student**
+- Browse/search course catalog, enroll in a course (`[open enrollment vs. instructor-approved — specify]`)
+- View enrolled courses, see syllabus/schedule
+- Work through lessons (video, text/reading, slides/PDF)
+- Submit assignments (text entry, file/photo upload)
+- Take quizzes/tests, see results and feedback
+- View grades per course and overall
+- Message/ask questions to instructor (or post in a course discussion board)
+- Receive notifications: new assignment posted, grade released, deadline reminder
+- View calendar of upcoming due dates across all courses
+
+**Instructor**
+- Create/edit a course: title, description, syllabus, lessons, assignments, quizzes
+- Organize course content into modules/units with an order
+- Create assignments with due dates, point values, submission type (text/file)
+- Create quizzes (multiple choice, true/false, short answer) with auto-grading where possible
+- Grade submissions: view student work, enter score, leave feedback comments
+- View class roster and per-student progress/grades
+- Post announcements to a course (push notification to enrolled students)
+- View a dashboard: submissions awaiting grading, upcoming deadlines, class engagement
+
+### Screens (minimum set)
+
+- Auth: Login, Sign Up (role selection or invite-based), Forgot Password
+- Shared: Role-based Home, Notifications, Profile/Settings
+- Student: Course Catalog, Course Detail (syllabus/enroll), My Courses, Lesson Viewer, Assignment Detail + Submit, Quiz Taker, Quiz Results, Grades, Course Discussion/Messages, Calendar
+- Instructor: Instructor Dashboard, Course Management (list/create/edit), Lesson/Module Editor, Assignment Editor, Quiz Editor, Submissions Inbox (grading queue), Grading Detail view, Class Roster + Gradebook, Announcements Composer
+
+### Data Model (starting point — refine as needed)
+
+```
+User { id, name, email, role: 'student' | 'instructor' }
+Course { id, title, description, instructorId, syllabus, modules: Module[] }
+Module { id, courseId, title, order, lessons: Lesson[] }
+Lesson { id, moduleId, type: 'video' | 'text' | 'pdf', order, content }
+Enrollment { id, studentId, courseId, enrolledAt, status: 'active' | 'completed' | 'dropped' }
+Assignment { id, courseId, title, description, dueDate, pointsPossible, submissionType: 'text' | 'file' }
+Submission { id, assignmentId, studentId, content/fileUrl, submittedAt, score?, feedback?, gradedAt? }
+Quiz { id, courseId, title, questions: Question[], dueDate, timeLimitMinutes? }
+Question { id, quizId, type: 'multiple_choice' | 'true_false' | 'short_answer', text, options?, correctAnswer }
+QuizAttempt { id, quizId, studentId, answers, score, submittedAt }
+Announcement { id, courseId, title, body, postedAt }
+Message/DiscussionPost { id, courseId, authorId, body, postedAt, parentId? }
+```
+
+### Tech Stack & Standards
+
+- **React Native + TypeScript**, functional components and hooks only, `strict` mode, no `any`.
+- **Navigation:** React Navigation, separate tab/stack navigators for Student vs Instructor (role-based gating after login).
+- **State management:** React Query (or RTK Query) for server/API state; `[Zustand or Context]` for global client state (auth/session); React Hook Form for assignment/quiz/course editor forms.
+- **Styling:** `StyleSheet.create`, centralized theme tokens (colors, spacing, typography) — no hardcoded hex values in components.
+- **Lists:** FlatList/FlashList for course catalogs, rosters, and submission queues — never `.map()` in a ScrollView.
+- **File uploads:** for assignment submissions and course materials, use `[expo-document-picker/expo-image-picker or react-native-document-picker — specify per Expo/bare choice]`.
+- **API layer:** all network calls through a shared service/client module — no raw `fetch` in components. Assume a REST (or GraphQL — specify `[REST/GraphQL]`) backend at `[API base URL / "mock for now"]`.
+- **Auth:** JWT-based session, token refresh, role stored in decoded token or a `/me` endpoint.
+- **Testing:** Jest + React Native Testing Library; at minimum cover quiz auto-grading logic and grade-calculation logic with unit tests.
+- **Linting:** ESLint + Prettier, pre-commit hook via Husky/lint-staged.
+- Follow the attached `react-native-coding-standards.md` for naming, folder structure, and component conventions. `[Attach that file, or say "no existing standards, use your best judgment."]`
+
+### Non-Functional Requirements
+
+- Accessibility: screen-reader labels on interactive elements, sufficient color contrast, minimum tap target sizes.
+- Push notifications: `[Firebase Cloud Messaging / Expo Notifications — specify]`
+- Video playback: `[embedded player library — e.g. expo-av or react-native-video — specify]`
+- Platform targets: `[iOS only / Android only / both]`
+- Expo or bare React Native: `[specify — affects available libraries and build tooling]`
+- Offline: students should be able to view a downloaded/cached lesson without connectivity — flag as stretch goal unless required for v1.
+
+### What to Deliver First (suggested build order)
+
+1. Project scaffold + navigation shell (auth stack, student tabs, instructor tabs) with mock data
+2. Auth flow (login, sign up with role selection, role-based routing)
+3. Student: course catalog → enroll → course detail → lesson viewer
+4. Student: assignment submission + quiz taker
+5. Instructor: course/module/lesson editor
+6. Instructor: assignment + quiz editor
+7. Instructor: submissions inbox + grading flow, gradebook
+8. Student: grades view, calendar, notifications
+9. Wire up real API layer once backend contract is confirmed
+10. Announcements, discussion/messaging, offline caching
+
+---
+
+## Before You Send This
+
+Fill in or decide on the `[bracketed]` items above — the ones that matter most for scoping correctly:
+
+- [ ] App purpose (one-liner) and context (K-12, higher ed, or general online course platform)
+- [ ] Enrollment model: open self-enroll vs. instructor-approved vs. invite-only
+- [ ] REST vs GraphQL, and whether a backend exists yet or the AI should build against mocks
+- [ ] Expo vs bare React Native
+- [ ] iOS / Android / both
+- [ ] Push notification provider and video playback library
+- [ ] Global state library preference (Zustand vs Context vs Redux)
+
+If you want, I can fill these in with sensible defaults right now instead of leaving them as placeholders — just tell me your preferences, or say "pick reasonable defaults" and I'll finalize the prompt.

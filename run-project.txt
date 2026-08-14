@@ -1,0 +1,2 @@
+backend = npm run start:dev
+frontend = npx expo start

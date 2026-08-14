@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   unread: { borderLeftWidth: 4, borderLeftColor: colors.primary },
   iconContainer: { paddingTop: 2 },
   content: { flex: 1 },
-  time: { ...typography.caption, color: colors.textDim, marginTop: 4 },
+  time: { ...typography.caption, color: colors.inkMuted, marginTop: 4 },
   loader: { marginTop: spacing.xxl },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
 });

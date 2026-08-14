@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  student
+  instructor
+  admin
+}
+
+enum EnrollmentStatus {
+  active
+  completed
+  dropped
+}
+
+enum LessonType {
+  video
+  text
+  pdf
+}
+
+enum SubmissionType {
+  text
+  file
+}
+
+enum QuestionType {
+  multiple_choice
+  true_false
+  short_answer
+}
+
+enum NotificationType {
+  assignment
+  grade
+  deadline
+  announcement
+}
+
+model User {
+  id                 String   @id @default(cuid())
+  name               String
+  phone              String   @unique
+  email              String?
+  passwordHash       String
+  role               Role
+  avatarUrl          String?
+  // True after an administrator resets this user's password (or otherwise
+  // forces a change). The client must route the user to the change-password
+  // screen before letting them into the rest of the app until this clears.
+  mustChangePassword Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  coursesTaught     Course[]           @relation("InstructorCourses")
+  enrollments       Enrollment[]
+  submissions       Submission[]
+  quizAttempts      QuizAttempt[]
+  discussionPosts   DiscussionPost[]
+  notifications     AppNotification[]
+  lessonCompletions LessonCompletion[]
+}
+
+model Course {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  syllabus      String
+  category      String
+  coverImageUrl String?
+  createdAt     DateTime @default(now())
+
+  instructorId String
+  instructor   User   @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: Cascade)
+
+  modules       Module[]
+  enrollments   Enrollment[]
+  assignments   Assignment[]
+  quizzes       Quiz[]
+  announcements Announcement[]
+  discussionPosts DiscussionPost[]
+
+  @@index([instructorId])
+}
+
+model Module {
+  id       String @id @default(cuid())
+  title    String
+  order    Int
+
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons  Lesson[]
+
+  @@index([courseId])
+}
+
+model Lesson {
+  id              String     @id @default(cuid())
+  type            LessonType
+  order           Int
+  title           String
+  content         String
+  durationMinutes Int?
+
+  moduleId String
+  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  completions LessonCompletion[]
+
+  @@index([moduleId])
+}
+
+model LessonCompletion {
+  id          String   @id @default(cuid())
+  completedAt DateTime @default(now())
+
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lessonId  String
+  lesson    Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, lessonId])
+  @@index([studentId])
+  @@index([lessonId])
+}
+
+model Enrollment {
+  id              String           @id @default(cuid())
+  enrolledAt      DateTime         @default(now())
+  status          EnrollmentStatus @default(active)
+  progressPercent Int              @default(0)
+
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+}
+
+model Assignment {
+  id              String         @id @default(cuid())
+  title           String
+  description     String
+  dueDate         DateTime
+  pointsPossible  Int
+  submissionType  SubmissionType
+
+  courseId String
+  course   Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+
+  @@index([courseId])
+}
+
+model Submission {
+  id          String    @id @default(cuid())
+  content     String?
+  fileUrl     String?
+  submittedAt DateTime  @default(now())
+  score       Int?
+  feedback    String?
+  gradedAt    DateTime?
+
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId])
+  @@index([studentId])
+}
+
+model Quiz {
+  id               String   @id @default(cuid())
+  title            String
+  dueDate          DateTime
+  timeLimitMinutes Int?
+
+  courseId  String
+  course    Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questions Question[]
+  attempts  QuizAttempt[]
+
+  @@index([courseId])
+}
+
+model Question {
+  id            String       @id @default(cuid())
+  type          QuestionType
+  text          String
+  options       String[]
+  correctAnswer String
+  points        Int
+
+  quizId String
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+}
+
+model QuizAttempt {
+  id          String   @id @default(cuid())
+  answers     Json
+  score       Int
+  submittedAt DateTime @default(now())
+
+  quizId    String
+  quiz      Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([quizId, studentId])
+  @@index([quizId])
+  @@index([studentId])
+}
+
+model Announcement {
+  id       String   @id @default(cuid())
+  title    String
+  body     String
+  postedAt DateTime @default(now())
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+}
+
+model DiscussionPost {
+  id       String   @id @default(cuid())
+  body     String
+  postedAt DateTime @default(now())
+  parentId String?
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+}
+
+model AppNotification {
+  id        String           @id @default(cuid())
+  title     String
+  body      String
+  type      NotificationType
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

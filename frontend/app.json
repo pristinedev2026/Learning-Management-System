@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "LMS",
+    "slug": "lms-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "lms",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourorg.lms"
+    },
+    "android": {
+      "package": "com.yourorg.lms",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF"
+      },
+      "permissions": [
+        "android.permission.DETECT_SCREEN_CAPTURE"
+      ]
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png"
+        }
+      ]
+    ]
+  }
+}
