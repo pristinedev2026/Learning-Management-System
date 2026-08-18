@@ -12,6 +12,8 @@ import { InstructorQuizEditorScreen } from '@/screens/instructor/InstructorQuizE
 import { InstructorSubmissionsScreen } from '@/screens/instructor/InstructorSubmissionsScreen';
 import { InstructorGradingScreen } from '@/screens/instructor/InstructorGradingScreen';
 import { PostAnnouncementScreen } from '@/screens/instructor/PostAnnouncementScreen';
+import { InstructorAnalyticsScreen } from '@/screens/instructor/InstructorAnalyticsScreen';
+import { MessagesStack } from '@/navigation/MessagesStack';
 import { ProfileStack } from '@/navigation/ProfileStack';
 import { PlaceholderScreen } from '@/screens/PlaceholderScreen';
 import { colors } from '@/theme/tokens';
@@ -65,7 +67,8 @@ export type InstructorTabParamList = {
   Dashboard: undefined;
   Courses: undefined;
   Submissions: undefined;
-  Roster: undefined;
+  Analytics: undefined;
+  Messages: undefined;
   Profile: undefined;
 };
 
@@ -142,10 +145,11 @@ export function InstructorTabs() {
         tabBarInactiveTintColor: colors.gray500,
         tabBarIcon: ({ color, size }) => {
           let iconName: any;
-          if (route.name === 'Dashboard') iconName = 'stats-chart-outline';
+          if (route.name === 'Dashboard') iconName = 'home-outline';
           else if (route.name === 'Courses') iconName = 'library-outline';
           else if (route.name === 'Submissions') iconName = 'clipboard-outline';
-          else if (route.name === 'Roster') iconName = 'people-outline';
+          else if (route.name === 'Analytics') iconName = 'stats-chart-outline';
+          else if (route.name === 'Messages') iconName = 'chatbubbles-outline';
           else if (route.name === 'Profile') iconName = 'person-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -154,14 +158,8 @@ export function InstructorTabs() {
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Courses" component={CoursesStack} options={{ title: 'Courses' }} />
       <Tab.Screen name="Submissions" component={SubmissionsStack} options={{ title: 'Grading' }} />
-      <Tab.Screen name="Roster" options={{ title: 'Roster' }}>
-        {() => (
-          <PlaceholderScreen
-            title="Class Roster & Gradebook"
-            note="Per-student progress and grades — build step 7."
-          />
-        )}
-      </Tab.Screen>
+      <Tab.Screen name="Analytics" component={InstructorAnalyticsScreen} options={{ title: 'Analytics' }} />
+      <Tab.Screen name="Messages" component={MessagesStack} options={{ title: 'Chat' }} />
       <Tab.Screen name="Profile" component={ProfileStack} options={{ title: 'Profile' }} />
     </Tab.Navigator>
   );

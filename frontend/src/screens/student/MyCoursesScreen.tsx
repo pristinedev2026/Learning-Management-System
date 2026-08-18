@@ -9,6 +9,9 @@ import type { Enrollment } from '@/types';
 import { colors, spacing, typography } from '@/theme/tokens';
 import type { StudentCatalogStackParamList } from '@/navigation/StudentTabs';
 import { Ionicons } from '@expo/vector-icons';
+import { generateCertificatePDF } from '@/utils/certificateGenerator';
+import * as api from '@/services/api';
+import { Alert } from 'react-native';
 
 type Props = NativeStackScreenProps<any, 'MyCourses'>;
 
@@ -64,7 +67,23 @@ function EnrollmentCard({
   title: string;
   onPress: () => void;
 }) {
-  const tone = enrollment.status === 'completed' ? 'success' : 'progress';
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const tone = enrollment.status === 'completed' || enrollment.progressPercent === 100 ? 'success' : 'progress';
+
+  const handleDownloadCertificate = async (e: any) => {
+    e.stopPropagation();
+    setIsGenerating(true);
+    try {
+      const certData = await api.fetchCertificateData(enrollment.id);
+      await generateCertificatePDF(certData);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to generate certificate. Please try again later.');
+      console.error(error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -80,10 +99,27 @@ function EnrollmentCard({
               {title}
             </Text>
           </View>
-          <Tag label={enrollment.status === 'completed' ? 'Completed' : 'In progress'} tone={tone} />
+          <Tag label={enrollment.progressPercent === 100 ? 'Completed' : 'In progress'} tone={tone} />
         </View>
         <ProgressBar percent={enrollment.progressPercent} />
-        <Text style={styles.progressLabel}>{enrollment.progressPercent}% complete</Text>
+        <View style={styles.cardBottom}>
+          <Text style={styles.progressLabel}>{enrollment.progressPercent}% complete</Text>
+          {enrollment.progressPercent === 100 && (
+            <Pressable
+              onPress={handleDownloadCertificate}
+              disabled={isGenerating}
+              style={({ pressed }) => [
+                styles.certButton,
+                pressed && { opacity: 0.7 }
+              ]}
+            >
+              <Ionicons name="download-outline" size={16} color={colors.primary} />
+              <Text style={styles.certButtonText}>
+                {isGenerating ? 'Generating...' : 'Certificate'}
+              </Text>
+            </Pressable>
+          )}
+        </View>
       </Card>
     </Pressable>
   );
@@ -97,7 +133,18 @@ const styles = StyleSheet.create({
   card: { gap: spacing.sm },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
   titleWithIcon: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   progressLabel: { ...typography.caption },
+  certButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primaryMuted,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  certButtonText: { ...typography.caption, color: colors.primary, fontWeight: 'bold' },
   loader: { marginTop: spacing.xxl },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl, paddingHorizontal: spacing.xl },
   emptyBody: { ...typography.caption, marginTop: spacing.xs, textAlign: 'center' },

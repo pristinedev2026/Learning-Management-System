@@ -1,11 +1,15 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { gradeQuiz } from './grading';
+import { GamificationService } from '../gamification/gamification.service';
 import type { CreateQuizDto, SubmitQuizAttemptDto } from './dto/quiz.dto';
 
 @Injectable()
 export class QuizzesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private gamification: GamificationService
+  ) {}
 
   async forCourse(courseId: string) {
     return this.prisma.quiz.findMany({
@@ -46,12 +50,19 @@ export class QuizzesService {
     if (!quiz) throw new NotFoundException('Quiz not found.');
 
     const { score } = gradeQuiz(quiz.questions, dto.answers);
+    const totalPoints = quiz.questions.reduce((sum, q) => sum + q.points, 0);
 
-    return this.prisma.quizAttempt.upsert({
+    const attempt = await this.prisma.quizAttempt.upsert({
       where: { quizId_studentId: { quizId, studentId } },
       update: { answers: dto.answers, score, submittedAt: new Date() },
       create: { quizId, studentId, answers: dto.answers, score },
     });
+
+    if (score === totalPoints && totalPoints > 0) {
+      await this.gamification.awardBadge(studentId, 'QUIZ_PERFECT');
+    }
+
+    return attempt;
   }
 
   async myAttempt(studentId: string, quizId: string) {

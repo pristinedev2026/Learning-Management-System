@@ -1,11 +1,15 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { GamificationService } from '../gamification/gamification.service';
 import type { CreateCourseDto, CreateLessonDto, CreateModuleDto, UpdateCourseDto } from './dto/course.dto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CoursesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private gamification: GamificationService
+  ) {}
 
   private getCourseInclude(studentId?: string): Prisma.CourseInclude {
     return {
@@ -59,16 +63,22 @@ export class CoursesService {
     };
   }
 
-  async catalog(search?: string) {
+  async catalog(search?: string, category?: string) {
+    const where: Prisma.CourseWhereInput = {};
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (category) {
+      where.category = category;
+    }
+
     const courses = await this.prisma.course.findMany({
-      where: search
-        ? {
-            OR: [
-              { title: { contains: search, mode: 'insensitive' } },
-              { category: { contains: search, mode: 'insensitive' } },
-            ],
-          }
-        : undefined,
+      where,
       include: this.getCourseInclude(),
       orderBy: { createdAt: 'desc' },
     });
@@ -91,6 +101,82 @@ export class CoursesService {
       orderBy: { createdAt: 'desc' },
     });
     return courses.map((c) => this.serialize(c));
+  }
+
+  async getInstructorStats(instructorId: string) {
+    const courses = await this.prisma.course.findMany({
+      where: { instructorId },
+      select: {
+        id: true,
+        _count: {
+          select: { enrollments: true },
+        },
+      },
+    });
+
+    const totalCourses = courses.length;
+    const totalStudents = courses.reduce((sum, c) => sum + c._count.enrollments, 0);
+
+    const toGrade = await this.prisma.submission.count({
+      where: {
+        score: null,
+        assignment: {
+          course: { instructorId },
+        },
+      },
+    });
+
+    return { totalCourses, totalStudents, toGrade };
+  }
+
+  async getInstructorAnalytics(instructorId: string) {
+    const courses = await this.prisma.course.findMany({
+      where: { instructorId },
+      include: {
+        _count: { select: { enrollments: true } },
+        modules: {
+          include: {
+            lessons: {
+              include: {
+                _count: { select: { completions: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const courseEngagement = courses.map((course) => {
+      const totalLessons = course.modules.reduce((sum, m) => sum + m.lessons.length, 0);
+      const totalCompletions = course.modules.reduce(
+        (sum, m) => sum + m.lessons.reduce((lSum, l) => lSum + l._count.completions, 0),
+        0
+      );
+
+      return {
+        id: course.id,
+        title: course.title,
+        students: course._count.enrollments,
+        completionRate:
+          totalLessons === 0 || course._count.enrollments === 0
+            ? 0
+            : Math.round((totalCompletions / (totalLessons * course._count.enrollments)) * 100),
+      };
+    });
+
+    // Mocking some time-series data for the demo
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return d.toISOString().split('T')[0];
+    }).reverse();
+
+    const activityTrend = last7Days.map((date) => ({
+      date,
+      completions: Math.floor(Math.random() * 20) + 5,
+    }));
+
+    return { courseEngagement, activityTrend };
   }
 
   async create(instructorId: string, dto: CreateCourseDto) {
@@ -180,6 +266,10 @@ export class CoursesService {
       where: { studentId_courseId: { studentId, courseId } },
       data: { progressPercent },
     });
+
+    if (progressPercent === 100) {
+      await this.gamification.awardBadge(studentId, 'COURSE_COMPLETE');
+    }
 
     return progressPercent;
   }

@@ -60,3 +60,21 @@ export class UserInitiatedChangePasswordDto {
   @MinLength(8, { message: 'Password must be at least 8 characters' })
   newPassword!: string;
 }
+
+export class ForgotPasswordDto {
+  @Matches(PHONE_PATTERN, { message: 'Enter a valid phone number.' })
+  phone!: string;
+}
+
+export class ResetPasswordDto {
+  @Matches(PHONE_PATTERN, { message: 'Enter a valid phone number.' })
+  phone!: string;
+
+  @IsString()
+  @MinLength(4, { message: 'Enter the 6-digit code' }) // Using 4-6 for simplicity in demo
+  code!: string;
+
+  @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
+  newPassword!: string;
+}

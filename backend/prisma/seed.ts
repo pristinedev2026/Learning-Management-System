@@ -171,6 +171,29 @@ async function main() {
     },
   });
 
+  await prisma.badge.createMany({
+    data: [
+      {
+        name: 'Perfect Score',
+        description: 'Achieved 100% on a quiz.',
+        icon: 'trophy-outline',
+        criteria: 'QUIZ_PERFECT',
+      },
+      {
+        name: 'Course Finisher',
+        description: 'Completed 100% of a course.',
+        icon: 'ribbon-outline',
+        criteria: 'COURSE_COMPLETE',
+      },
+      {
+        name: 'Fast Learner',
+        description: 'Completed 5 lessons in one day.',
+        icon: 'rocket-outline',
+        criteria: 'FAST_LEARNER',
+      },
+    ],
+  });
+
   console.log('Seed complete.');
   console.log(`Demo login: ${student.phone} / password123 (student)`);
   console.log(`Demo login: ${instructor.phone} / password123 (instructor)`);

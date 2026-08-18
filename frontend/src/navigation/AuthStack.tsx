@@ -3,11 +3,13 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
 import { SignUpScreen } from '@/screens/auth/SignUpScreen';
 import { ForgotPasswordScreen } from '@/screens/auth/ForgotPasswordScreen';
+import { ResetPasswordScreen } from '@/screens/auth/ResetPasswordScreen';
 
 export type AuthStackParamList = {
   Login: undefined;
   SignUp: undefined;
   ForgotPassword: undefined;
+  ResetPassword: { phone: string };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -25,6 +27,11 @@ export function AuthStack() {
         name="ForgotPassword"
         component={ForgotPasswordScreen}
         options={{ headerShown: true, title: 'Reset password' }}
+      />
+      <Stack.Screen
+        name="ResetPassword"
+        component={ResetPasswordScreen}
+        options={{ headerShown: true, title: 'Verify code' }}
       />
     </Stack.Navigator>
   );

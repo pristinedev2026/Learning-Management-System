@@ -34,6 +34,29 @@ export class AdminService {
     return users.map((u) => this.toPublicUser(u));
   }
 
+  async getStats() {
+    const [userCount, courseCount, enrollmentCount, submissionCount] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.course.count(),
+      this.prisma.enrollment.count(),
+      this.prisma.submission.count(),
+    ]);
+
+    // Get some recent activity or breakdown
+    const roleBreakdown = await this.prisma.user.groupBy({
+      by: ['role'],
+      _count: true,
+    });
+
+    return {
+      totalUsers: userCount,
+      totalCourses: courseCount,
+      totalEnrollments: enrollmentCount,
+      totalSubmissions: submissionCount,
+      roles: roleBreakdown.reduce((acc, curr) => ({ ...acc, [curr.role]: curr._count }), {}),
+    };
+  }
+
   private async requireUser(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found.');

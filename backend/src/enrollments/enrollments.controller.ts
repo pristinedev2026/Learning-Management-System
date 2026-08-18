@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { EnrollmentsService } from './enrollments.service';
 import { EnrollDto } from './dto/enroll.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -22,5 +22,10 @@ export class EnrollmentsController {
   @Post()
   enroll(@CurrentUser() user: JwtPayload, @Body() dto: EnrollDto) {
     return this.enrollmentsService.enroll(user.sub, dto.courseId);
+  }
+
+  @Get(':id/certificate')
+  getCertificate(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.enrollmentsService.getCertificateData(user.sub, id);
   }
 }

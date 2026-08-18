@@ -2,12 +2,15 @@ import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/co
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { GamificationService } from '../gamification/gamification.service';
 import type {
   ChangePasswordDto,
   LoginDto,
   SignUpDto,
   UpdateProfileDto,
   UserInitiatedChangePasswordDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
 } from './dto/auth.dto';
 
 interface UserRecord {
@@ -24,7 +27,8 @@ interface UserRecord {
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private jwt: JwtService
+    private jwt: JwtService,
+    private gamification: GamificationService
   ) {}
 
   private toPublicUser(user: UserRecord) {
@@ -57,6 +61,9 @@ export class AuthService {
     if (!passwordMatches) {
       throw new UnauthorizedException('Invalid phone number or password.');
     }
+
+    await this.gamification.updateStreak(user.id);
+
     return {
       accessToken: this.sign(user),
       user: this.toPublicUser(user),
@@ -123,5 +130,32 @@ export class AuthService {
       data: { passwordHash, mustChangePassword: false },
     });
     return this.toPublicUser(updatedUser);
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.prisma.user.findUnique({ where: { phone: dto.phone } });
+    if (!user) {
+      // Don't reveal if user exists for security, but for demo we can be more explicit
+      throw new UnauthorizedException('No account found with this phone number.');
+    }
+    // In a real app: generate a code, save to DB with expiry, send via SMS
+    console.log(`[Demo] Reset code for ${dto.phone}: 123456`);
+    return { message: 'A reset code has been sent to your phone.' };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    if (dto.code !== '123456') {
+      throw new UnauthorizedException('Invalid reset code.');
+    }
+    const user = await this.prisma.user.findUnique({ where: { phone: dto.phone } });
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash, mustChangePassword: false },
+    });
+    return { success: true, message: 'Password has been reset successfully.' };
   }
 }

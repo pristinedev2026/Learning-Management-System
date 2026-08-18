@@ -55,6 +55,10 @@ model User {
   // forces a change). The client must route the user to the change-password
   // screen before letting them into the rest of the app until this clears.
   mustChangePassword Boolean  @default(false)
+
+  streakCount        Int      @default(0)
+  lastLoginAt        DateTime?
+
   createdAt          DateTime @default(now())
 
   coursesTaught     Course[]           @relation("InstructorCourses")
@@ -64,6 +68,48 @@ model User {
   discussionPosts   DiscussionPost[]
   notifications     AppNotification[]
   lessonCompletions LessonCompletion[]
+  payments          Payment[]
+  badges            UserBadge[]
+  reviews           Review[]
+  sentMessages      ChatMessage[]      @relation("SentMessages")
+  receivedMessages  ChatMessage[]      @relation("ReceivedMessages")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  body      String
+  createdAt DateTime @default(now())
+  read      Boolean  @default(false)
+
+  senderId  String
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver  User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+}
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  icon        String   // Ionicons name
+  criteria    String   // Type of achievement: e.g. "QUIZ_PERFECT", "COURSE_COMPLETE"
+  users       UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  awardedAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
 }
 
 model Course {
@@ -73,6 +119,7 @@ model Course {
   syllabus      String
   category      String
   coverImageUrl String?
+  price         Float    @default(0)
   createdAt     DateTime @default(now())
 
   instructorId String
@@ -84,8 +131,44 @@ model Course {
   quizzes       Quiz[]
   announcements Announcement[]
   discussionPosts DiscussionPost[]
+  payments      Payment[]
+  reviews       Review[]
 
   @@index([instructorId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int      // 1 to 5
+  comment   String?
+  createdAt DateTime @default(now())
+
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+  @@index([createdAt])
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  amount        Float
+  currency      String   @default("USD")
+  status        String   @default("pending") // pending, succeeded, failed
+  stripeId      String?  @unique
+  createdAt     DateTime @default(now())
+
+  studentId     String
+  student       User     @relation(fields: [studentId], references: [id])
+  courseId      String
+  course        Course   @relation(fields: [courseId], references: [id])
+
+  @@index([studentId])
+  @@index([courseId])
 }
 
 model Module {

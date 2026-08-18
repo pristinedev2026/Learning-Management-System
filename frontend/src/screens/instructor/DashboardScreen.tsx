@@ -2,16 +2,15 @@ import React from 'react';
 import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card } from '@/components/Card';
 import { Tag } from '@/components/StatusPieces';
-import { useInstructorCourses } from '@/services/queries';
+import { useInstructorCourses, useInstructorStats } from '@/services/queries';
 import { useAuthStore } from '@/store/authStore';
 import { colors, spacing, typography } from '@/theme/tokens';
 import { Ionicons } from '@expo/vector-icons';
 
 export function DashboardScreen() {
   const user = useAuthStore((s) => s.user);
-  const { data: courses, isLoading } = useInstructorCourses(user?.id ?? '');
-
-  const totalStudents = courses?.reduce((sum, c) => sum + c.studentCount, 0) ?? 0;
+  const { data: courses, isLoading: loadingCourses } = useInstructorCourses(user?.id ?? '');
+  const { data: stats, isLoading: loadingStats } = useInstructorStats(user?.id ?? '');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -19,13 +18,29 @@ export function DashboardScreen() {
         <Text style={typography.display}>Welcome back{user ? `, ${user.name.split(' ')[0]}` : ''}</Text>
 
         <View style={styles.statsRow}>
-          <StatCard label="Courses" value={courses?.length ?? 0} icon="library-outline" />
-          <StatCard label="Students" value={totalStudents} icon="people-outline" />
-          <StatCard label="To grade" value={0} tone="progress" icon="time-outline" />
+          <StatCard
+            label="Courses"
+            value={stats?.totalCourses ?? 0}
+            icon="library-outline"
+            loading={loadingStats}
+          />
+          <StatCard
+            label="Students"
+            value={stats?.totalStudents ?? 0}
+            icon="people-outline"
+            loading={loadingStats}
+          />
+          <StatCard
+            label="To grade"
+            value={stats?.toGrade ?? 0}
+            tone="progress"
+            icon="time-outline"
+            loading={loadingStats}
+          />
         </View>
 
         <Text style={[typography.subtitle, styles.sectionTitle]}>Your courses</Text>
-        {isLoading ? (
+        {loadingCourses ? (
           <ActivityIndicator color={colors.primary} />
         ) : (
           courses?.map((course) => (
@@ -48,18 +63,24 @@ function StatCard({
   value,
   tone,
   icon,
+  loading,
 }: {
   label: string;
   value: number;
   tone?: 'progress';
   icon: any;
+  loading?: boolean;
 }) {
   return (
     <Card style={styles.statCard}>
       <Ionicons name={icon} size={24} color={tone === 'progress' ? colors.progress : colors.primary} />
-      <Text style={[typography.display, tone === 'progress' && styles.statValueProgress]}>
-        {value}
-      </Text>
+      {loading ? (
+        <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 8 }} />
+      ) : (
+        <Text style={[typography.display, tone === 'progress' && styles.statValueProgress]}>
+          {value}
+        </Text>
+      )}
       <Text style={typography.caption}>{label}</Text>
     </Card>
   );

@@ -78,6 +78,18 @@ export async function login(phone: string, password: string): Promise<{ user: Us
   return request('/auth/login', { method: 'POST', body: { phone, password } });
 }
 
+export async function forgotPassword(phone: string): Promise<{ message: string }> {
+  return request('/auth/forgot-password', { method: 'POST', body: { phone } });
+}
+
+export async function resetPassword(params: {
+  phone: string;
+  code: string;
+  newPassword: string;
+}): Promise<{ success: boolean; message: string }> {
+  return request('/auth/reset-password', { method: 'POST', body: params });
+}
+
 export async function signUp(
   name: string,
   phone: string,
@@ -114,6 +126,16 @@ export async function changePasswordVoluntary(params: {
 
 // ---- Admin ----
 
+export async function fetchAdminStats(): Promise<{
+  totalUsers: number;
+  totalCourses: number;
+  totalEnrollments: number;
+  totalSubmissions: number;
+  roles: Record<string, number>;
+}> {
+  return request('/admin/stats', { auth: true });
+}
+
 export async function fetchAllUsers(): Promise<User[]> {
   return request('/admin/users', { auth: true });
 }
@@ -132,9 +154,12 @@ export async function adminForcePasswordChange(userId: string): Promise<User> {
 
 // ---- Courses ----
 
-export async function fetchCourseCatalog(query?: string): Promise<Course[]> {
-  const search = query ? `?search=${encodeURIComponent(query)}` : '';
-  return request(`/courses${search}`);
+export async function fetchCourseCatalog(query?: string, category?: string): Promise<Course[]> {
+  const params = new URLSearchParams();
+  if (query) params.append('search', query);
+  if (category) params.append('category', category);
+  const queryString = params.toString() ? `?${params.toString()}` : '';
+  return request(`/courses${queryString}`);
 }
 
 export async function fetchCourseById(courseId: string): Promise<Course> {
@@ -143,6 +168,21 @@ export async function fetchCourseById(courseId: string): Promise<Course> {
 
 export async function fetchInstructorCourses(instructorId: string): Promise<Course[]> {
   return request(`/courses/instructor/${instructorId}`);
+}
+
+export async function fetchInstructorStats(
+  instructorId: string
+): Promise<{ totalCourses: number; totalStudents: number; toGrade: number }> {
+  return request(`/courses/instructor/${instructorId}/stats`);
+}
+
+export async function fetchInstructorAnalytics(
+  instructorId: string
+): Promise<{
+  courseEngagement: Array<{ id: string; title: string; students: number; completionRate: number }>;
+  activityTrend: Array<{ date: string; completions: number }>;
+}> {
+  return request(`/courses/instructor/${instructorId}/analytics`, { auth: true });
 }
 
 export async function createCourse(params: {
@@ -207,6 +247,16 @@ export async function fetchMyEnrollments(_studentId: string): Promise<Enrollment
 
 export async function enrollInCourse(_studentId: string, courseId: string): Promise<Enrollment> {
   return request('/enrollments', { method: 'POST', body: { courseId }, auth: true });
+}
+
+export async function fetchCertificateData(enrollmentId: string): Promise<{
+  certificateId: string;
+  studentName: string;
+  courseTitle: string;
+  instructorName: string;
+  completionDate: string;
+}> {
+  return request(`/enrollments/${enrollmentId}/certificate`, { auth: true });
 }
 
 // ---- Assignments & Submissions ----
@@ -388,6 +438,52 @@ export async function createDiscussionPost(params: {
   });
 }
 
+// ---- Reviews ----
+
+export async function fetchReviews(courseId: string): Promise<any[]> {
+  return request(`/courses/${courseId}/reviews`);
+}
+
+export async function fetchReviewSummary(courseId: string): Promise<{ averageRating: number; reviewCount: number }> {
+  return request(`/courses/${courseId}/reviews/summary`);
+}
+
+export async function createReview(params: {
+  courseId: string;
+  rating: number;
+  comment?: string;
+}): Promise<any> {
+  return request(`/courses/${params.courseId}/reviews`, {
+    method: 'POST',
+    body: { rating: params.rating, comment: params.comment },
+    auth: true,
+  });
+}
+
+// ---- Messages ----
+
+export async function fetchConversations(): Promise<any[]> {
+  return request('/messages/conversations', { auth: true });
+}
+
+export async function fetchChatMessages(otherUserId: string): Promise<any[]> {
+  return request(`/messages/${otherUserId}`, { auth: true });
+}
+
+// ---- Payments ----
+
+export async function createPaymentIntent(courseId: string): Promise<{
+  clientSecret: string;
+  paymentId: string;
+  amount: number;
+}> {
+  return request('/payments/create-intent', { method: 'POST', body: { courseId }, auth: true });
+}
+
+export async function confirmPayment(paymentId: string): Promise<{ success: boolean; courseId: string }> {
+  return request(`/payments/${paymentId}/confirm`, { method: 'POST', auth: true });
+}
+
 // ---- Student Dashboard ----
 
 export async function fetchMyGrades(): Promise<any[]> {
@@ -400,4 +496,23 @@ export async function fetchMyCalendar(): Promise<CalendarItem[]> {
 
 export async function fetchMyNotifications(): Promise<AppNotification[]> {
   return request('/student/notifications', { auth: true });
+}
+
+// ---- Gamification ----
+
+export async function fetchAchievements(): Promise<{
+  streak: number;
+  badges: Badge[];
+}> {
+  return request('/gamification/achievements', { auth: true });
+}
+
+export async function fetchLeaderboard(): Promise<Array<{
+  id: string;
+  name: string;
+  avatarUrl?: string;
+  streakCount: number;
+  _count: { badges: number };
+}>> {
+  return request('/gamification/leaderboard', { auth: true });
 }

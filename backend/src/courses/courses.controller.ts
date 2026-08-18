@@ -14,13 +14,23 @@ export class CoursesController {
   constructor(private coursesService: CoursesService) {}
 
   @Get()
-  catalog(@Query('search') search?: string) {
-    return this.coursesService.catalog(search);
+  catalog(@Query('search') search?: string, @Query('category') category?: string) {
+    return this.coursesService.catalog(search, category);
   }
 
   @Get('instructor/:instructorId')
   byInstructor(@Param('instructorId') instructorId: string) {
     return this.coursesService.byInstructor(instructorId);
+  }
+
+  @Get('instructor/:instructorId/stats')
+  stats(@Param('instructorId') instructorId: string) {
+    return this.coursesService.getInstructorStats(instructorId);
+  }
+
+  @Get('instructor/:instructorId/analytics')
+  analytics(@Param('instructorId') instructorId: string) {
+    return this.coursesService.getInstructorAnalytics(instructorId);
   }
 
   @UseGuards(OptionalJwtAuthGuard)

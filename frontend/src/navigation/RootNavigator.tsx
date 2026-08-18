@@ -1,20 +1,44 @@
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { AuthStack } from '@/navigation/AuthStack';
 import { StudentTabs } from '@/navigation/StudentTabs';
 import { InstructorTabs } from '@/navigation/InstructorTabs';
 import { AdminTabs } from '@/navigation/AdminTabs';
 import { ChangePasswordScreen } from '@/screens/auth/ChangePasswordScreen';
 import { useAuthStore } from '@/store/authStore';
-import { colors } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { linking } from '@/navigation/linking';
 
 export function RootNavigator() {
   const { user, isHydrating, hydrate } = useAuthStore();
+  const { colors, isDark } = useTheme();
 
   React.useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  const navTheme = isDark ? {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.surface,
+      text: colors.ink,
+      border: colors.border,
+    },
+  } : {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.surface,
+      text: colors.ink,
+      border: colors.border,
+    },
+  };
 
   if (isHydrating) {
     return (
@@ -38,5 +62,9 @@ export function RootNavigator() {
     <AdminTabs />
   );
 
-  return <NavigationContainer>{content}</NavigationContainer>;
+  return (
+    <NavigationContainer theme={navTheme} linking={linking}>
+      {content}
+    </NavigationContainer>
+  );
 }

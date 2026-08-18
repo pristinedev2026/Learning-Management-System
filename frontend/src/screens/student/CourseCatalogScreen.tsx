@@ -2,13 +2,13 @@ import React from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
+  ScrollView,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { StudentCatalogStackParamList } from '@/navigation/StudentTabs';
@@ -23,7 +23,10 @@ type Props = NativeStackScreenProps<StudentCatalogStackParamList, 'CourseCatalog
 
 export function CourseCatalogScreen({ navigation }: Props) {
   const [search, setSearch] = React.useState('');
-  const { data: courses, isLoading, isError, refetch, isRefetching } = useCourseCatalog(search);
+  const [category, setCategory] = React.useState<string | undefined>();
+  const { data: courses, isLoading, isError, refetch, isRefetching } = useCourseCatalog(search, category);
+
+  const categories = ['Development', 'Business', 'Design', 'Marketing', 'Photography'];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -39,6 +42,28 @@ export function CourseCatalogScreen({ navigation }: Props) {
           accessibilityHint="Filters the course catalog as you type"
           returnKeyType="search"
         />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoryScroll}
+          contentContainerStyle={styles.categoryContent}
+        >
+          <Pressable
+            onPress={() => setCategory(undefined)}
+            style={[styles.categoryTag, !category && styles.categoryTagActive]}
+          >
+            <Text style={[styles.categoryText, !category && styles.categoryTextActive]}>All</Text>
+          </Pressable>
+          {categories.map((cat) => (
+            <Pressable
+              key={cat}
+              onPress={() => setCategory(cat)}
+              style={[styles.categoryTag, category === cat && styles.categoryTagActive]}
+            >
+              <Text style={[styles.categoryText, category === cat && styles.categoryTextActive]}>{cat}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
       </View>
 
       {isLoading ? (
@@ -85,7 +110,12 @@ function CourseCard({ course, onPress }: { course: Course; onPress: () => void }
           <Ionicons name="book-outline" size={32} color={colors.primary} />
         </View>
         <View style={styles.cardBody}>
-          <Tag label={course.category} tone="info" />
+          <View style={styles.cardHeader}>
+            <Tag label={course.category} tone="info" />
+            {course.price > 0 && (
+              <Text style={styles.price}>${course.price}</Text>
+            )}
+          </View>
           <Text style={typography.subtitle} numberOfLines={2}>
             {course.title}
           </Text>
@@ -112,6 +142,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     ...typography.body,
   },
+  categoryScroll: { marginTop: spacing.md },
+  categoryContent: { gap: spacing.sm, paddingRight: spacing.lg },
+  categoryTag: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: colors.gray100,
+  },
+  categoryTagActive: { backgroundColor: colors.primary },
+  categoryText: { ...typography.caption, color: colors.ink },
+  categoryTextActive: { color: 'white', fontWeight: 'bold' },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
   card: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
   thumbnail: {
@@ -124,6 +165,8 @@ const styles = StyleSheet.create({
   },
   thumbnailInitial: { ...typography.title, color: colors.primary },
   cardBody: { flex: 1, gap: spacing.xs },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  price: { ...typography.caption, fontWeight: 'bold', color: colors.success },
   instructor: { ...typography.caption },
   studentCount: { ...typography.caption, color: colors.gray500 },
   loader: { marginTop: spacing.xl },

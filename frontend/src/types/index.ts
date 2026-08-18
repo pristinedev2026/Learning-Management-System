@@ -11,6 +11,16 @@ export interface User {
   // The app should route the user to the change-password screen until
   // they set their own new password.
   mustChangePassword?: boolean;
+  streakCount: number;
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  criteria: string;
+  awardedAt?: string;
 }
 
 export interface Course {
@@ -22,6 +32,7 @@ export interface Course {
   coverImageUrl?: string;
   syllabus: string;
   category: string;
+  price: number;
   modules: Module[];
   studentCount: number;
 }

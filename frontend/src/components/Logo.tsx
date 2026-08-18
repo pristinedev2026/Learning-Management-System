@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Image, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions, Image } from 'react-native';
 import { spacing } from '@/theme/tokens';
 
 /**

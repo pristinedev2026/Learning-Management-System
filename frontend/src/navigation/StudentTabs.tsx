@@ -12,8 +12,10 @@ import { CourseAnnouncementsScreen } from '@/screens/student/CourseAnnouncements
 import { CourseDiscussionsScreen } from '@/screens/student/CourseDiscussionsScreen';
 import { MyCoursesScreen } from '@/screens/student/MyCoursesScreen';
 import { GradesScreen } from '@/screens/student/GradesScreen';
+import { AchievementsScreen } from '@/screens/student/AchievementsScreen';
 import { CalendarScreen } from '@/screens/student/CalendarScreen';
 import { NotificationsScreen } from '@/screens/student/NotificationsScreen';
+import { MessagesStack } from '@/navigation/MessagesStack';
 import { ProfileStack } from '@/navigation/ProfileStack';
 import { colors } from '@/theme/tokens';
 import { Ionicons } from '@expo/vector-icons';
@@ -102,8 +104,9 @@ function CatalogStack() {
 export type StudentTabParamList = {
   Catalog: undefined;
   MyCourses: undefined;
+  Achievements: undefined;
+  Messages: undefined;
   Calendar: undefined;
-  Grades: undefined;
   Notifications: undefined;
   Profile: undefined;
 };
@@ -121,8 +124,9 @@ export function StudentTabs() {
           let iconName: any;
           if (route.name === 'Catalog') iconName = 'search-outline';
           else if (route.name === 'MyCourses') iconName = 'book-outline';
+          else if (route.name === 'Achievements') iconName = 'trophy-outline';
+          else if (route.name === 'Messages') iconName = 'chatbubbles-outline';
           else if (route.name === 'Calendar') iconName = 'calendar-outline';
-          else if (route.name === 'Grades') iconName = 'ribbon-outline';
           else if (route.name === 'Notifications') iconName = 'notifications-outline';
           else if (route.name === 'Profile') iconName = 'person-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -131,9 +135,10 @@ export function StudentTabs() {
     >
       <Tab.Screen name="Catalog" component={CatalogStack} options={{ title: 'Explore' }} />
       <Tab.Screen name="MyCourses" component={MyCoursesScreen} options={{ title: 'My Courses' }} />
+      <Tab.Screen name="Achievements" component={AchievementsScreen} options={{ title: 'Awards' }} />
+      <Tab.Screen name="Messages" component={MessagesStack} options={{ title: 'Chat' }} />
       <Tab.Screen name="Calendar" component={CalendarScreen} options={{ title: 'Calendar' }} />
-      <Tab.Screen name="Grades" component={GradesScreen} options={{ title: 'Grades' }} />
-      <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
+      <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Alerts' }} />
       <Tab.Screen name="Profile" component={ProfileStack} options={{ title: 'Profile' }} />
     </Tab.Navigator>
   );

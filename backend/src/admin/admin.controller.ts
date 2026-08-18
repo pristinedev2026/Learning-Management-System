@@ -8,21 +8,26 @@ import { Roles } from '../common/decorators/roles.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.admin)
-@Controller('admin/users')
+@Controller('admin')
 export class AdminController {
   constructor(private adminService: AdminService) {}
 
-  @Get()
+  @Get('stats')
+  getStats() {
+    return this.adminService.getStats();
+  }
+
+  @Get('users')
   listUsers() {
     return this.adminService.listUsers();
   }
 
-  @Post(':userId/reset-password')
+  @Post('users/:userId/reset-password')
   resetPassword(@Param('userId') userId: string, @Body() dto: ResetPasswordDto) {
     return this.adminService.resetPassword(userId, dto);
   }
 
-  @Post(':userId/force-password-change')
+  @Post('users/:userId/force-password-change')
   forcePasswordChange(@Param('userId') userId: string) {
     return this.adminService.forcePasswordChange(userId);
   }

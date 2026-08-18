@@ -8,31 +8,47 @@
  * distinct roles rather than one generic "brand accent" reused everywhere.
  */
 
-export const colors = {
-  // Base / surfaces
-  ink: '#14162B', // primary text, headings
-  inkMuted: '#4B4E68', // secondary text
-  background: '#FAFAFC', // app background
-  surface: '#FFFFFF', // cards, sheets
+export const lightColors = {
+  ink: '#14162B',
+  inkMuted: '#4B4E68',
+  background: '#FAFAFC',
+  surface: '#FFFFFF',
   border: '#E3E4EE',
-
-  // Brand
-  primary: '#3B3F8C', // deep indigo — primary actions, active nav
-  primaryMuted: '#ECEDF9', // primary tint for chips/backgrounds
-
-  // Semantic status (each has a distinct job — do not interchange)
-  progress: '#C77D2E', // amber — in-progress, due soon
-  success: '#1E7A6C', // teal — completed, graded, correct
-  danger: '#B3412C', // overdue, incorrect, destructive
-  info: '#2E6BB3', // announcements, neutral info
-
-  // Grayscale utility
+  primary: '#3B3F8C',
+  primaryMuted: '#ECEDF9',
+  progress: '#C77D2E',
+  success: '#1E7A6C',
+  danger: '#B3412C',
+  info: '#2E6BB3',
   white: '#FFFFFF',
   gray100: '#F3F3F7',
   gray300: '#D6D7E3',
   gray500: '#8B8DA3',
   gray700: '#5A5C74',
-} as const;
+};
+
+export const darkColors = {
+  ink: '#FAFAFC',
+  inkMuted: '#A0A2B8',
+  background: '#14162B',
+  surface: '#1E203D',
+  border: '#2E3152',
+  primary: '#5C62C7',
+  primaryMuted: '#24274F',
+  progress: '#E6A23C',
+  success: '#34A853',
+  danger: '#F56C6C',
+  info: '#409EFF',
+  white: '#FFFFFF',
+  gray100: '#1E203D',
+  gray300: '#2E3152',
+  gray500: '#8B8DA3',
+  gray700: '#D6D7E3',
+};
+
+// Default export for backward compatibility where possible,
+// though dynamic themes will need the useTheme hook.
+export const colors = lightColors;
 
 export const spacing = {
   xs: 4,

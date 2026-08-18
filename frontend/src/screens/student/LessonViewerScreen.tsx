@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -8,6 +8,7 @@ import {
   View,
   Pressable,
   Alert,
+  Platform,
 } from 'react-native';
 import { Video } from 'expo-av';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -17,6 +18,12 @@ import { Card } from '@/components/Card';
 import { useToggleLessonCompletion } from '@/services/queries';
 import { colors, spacing, typography } from '@/theme/tokens';
 import type { Lesson } from '@/types';
+import {
+  downloadLessonFile,
+  getLocalUri,
+  isLessonDownloaded,
+  deleteLessonFile,
+} from '@/utils/offlineManager';
 
 type Props = NativeStackScreenProps<StudentCatalogStackParamList, 'Lesson'>;
 
@@ -28,9 +35,61 @@ type Props = NativeStackScreenProps<StudentCatalogStackParamList, 'Lesson'>;
 export function LessonViewerScreen({ route, navigation }: Props) {
   const { lesson, moduleId, courseId, allLessonsInModule } = route.params;
   const [isCompleted, setIsCompleted] = useState(lesson.completed ?? false);
-  const [videoRef, setVideoRef] = useState<Video>(null);
+  const [videoRef, setVideoRef] = useState<Video | null>(null);
+
+  // Offline caching state
+  const [isDownloaded, setIsDownloaded] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [localUri, setLocalUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkOfflineStatus = async () => {
+      if (lesson.type === 'video' || lesson.type === 'pdf') {
+        const uri = await getLocalUri(lesson.content);
+        if (uri) {
+          setLocalUri(uri);
+          setIsDownloaded(true);
+        }
+      }
+    };
+    checkOfflineStatus();
+  }, [lesson.id, lesson.content, lesson.type]);
 
   const toggleMutation = useToggleLessonCompletion(courseId);
+
+  const handleDownload = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+    setDownloadProgress(0);
+    try {
+      const uri = await downloadLessonFile(lesson.id, lesson.content, (progress) => {
+        setDownloadProgress(progress);
+      });
+      setLocalUri(uri);
+      setIsDownloaded(true);
+      Alert.alert('Success', 'Lesson downloaded for offline viewing');
+    } catch (error) {
+      Alert.alert('Download Error', 'Failed to download lesson');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleDeleteOffline = async () => {
+    Alert.alert('Delete Offline', 'Are you sure you want to remove this lesson from offline storage?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteLessonFile(lesson.id);
+          setLocalUri(null);
+          setIsDownloaded(false);
+        },
+      },
+    ]);
+  };
 
   // Find current position in all lessons
   const currentLessonIndex = allLessonsInModule.findIndex((l) => l.id === lesson.id);
@@ -61,9 +120,34 @@ export function LessonViewerScreen({ route, navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={typography.subtitle}>{lesson.title}</Text>
-          {lesson.durationMinutes && (
-            <Text style={styles.duration}>{lesson.durationMinutes} min</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={typography.subtitle}>{lesson.title}</Text>
+            {lesson.durationMinutes && (
+              <Text style={styles.duration}>{lesson.durationMinutes} min</Text>
+            )}
+          </View>
+
+          {(lesson.type === 'video' || lesson.type === 'pdf') && (
+            <View style={styles.offlineActions}>
+              {isDownloading ? (
+                <View style={styles.progressContainer}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={styles.progressText}>{Math.round(downloadProgress * 100)}%</Text>
+                </View>
+              ) : isDownloaded ? (
+                <Pressable onPress={handleDeleteOffline} style={styles.downloadedIndicator}>
+                  <Text style={styles.downloadedText}>✓ Offline</Text>
+                </Pressable>
+              ) : (
+                <Button
+                  label="Download"
+                  onPress={handleDownload}
+                  variant="outline"
+                  size="small"
+                  style={styles.downloadButton}
+                />
+              )}
+            </View>
           )}
         </View>
 
@@ -73,7 +157,7 @@ export function LessonViewerScreen({ route, navigation }: Props) {
             <View style={styles.videoContainer}>
               <Video
                 ref={(ref) => setVideoRef(ref)}
-                source={{ uri: lesson.content }}
+                source={{ uri: localUri || lesson.content }}
                 style={styles.video}
                 useNativeControls
                 resizeMode="contain"
@@ -240,6 +324,34 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   duration: { ...typography.caption, color: colors.inkMuted },
+
+  offlineActions: {
+    marginLeft: spacing.md,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  progressText: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: 'bold',
+  },
+  downloadButton: {
+    minWidth: 80,
+  },
+  downloadedIndicator: {
+    backgroundColor: colors.success + '20',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  downloadedText: {
+    ...typography.caption,
+    color: colors.success,
+    fontWeight: 'bold',
+  },
 
   contentCard: { minHeight: 200, justifyContent: 'center' },
 
