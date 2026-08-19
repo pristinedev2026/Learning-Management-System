@@ -22,3 +22,9 @@ adb devices
 
 = Permission Issue
 adb shell pm grant host.exp.exponent android.permission.DETECT_SCREEN_CAPTURE
+
+
+
+
+= Prisma
+npx prisma db push

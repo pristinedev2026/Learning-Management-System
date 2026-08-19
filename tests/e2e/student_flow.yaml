@@ -1,0 +1,27 @@
+appId: com.lms.app
+---
+- clearState
+- launchApp
+- # Assume user is logged in or login first
+- tapOn: "Log In"
+- typeText: "1234567891"
+- tapOn: "Password"
+- typeText: "password123"
+- tapOn: "Login"
+- # Catalog -> Enroll
+- tapOn: "Introduction to React Native"
+- tapOn: "Enroll for Free"
+- assertVisible: "Successfully enrolled"
+- # View Lesson
+- tapOn: "Start Learning"
+- assertVisible: "Introduction"
+- tapOn: "☐ Mark Complete"
+- assertVisible: "✓ Completed"
+- # Submit Assignment
+- tapOn: "Back to course"
+- tapOn: "Assignments"
+- tapOn: "First Project"
+- tapOn: "Submit Assignment"
+- typeText: "This is my project submission."
+- tapOn: "Submit"
+- assertVisible: "Submission successful"

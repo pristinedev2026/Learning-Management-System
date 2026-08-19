@@ -1,0 +1,30 @@
+appId: com.lms.app
+---
+- clearState
+- launchApp
+- tapOn: "Log In"
+- typeText: "9876543210" # Instructor phone
+- tapOn: "Password"
+- typeText: "password123"
+- tapOn: "Login"
+- # Create Course
+- tapOn: "My Courses"
+- tapOn: "Create New Course"
+- typeText: "Advanced Node.js"
+- tapOn: "Description"
+- typeText: "Master Node.js with this advanced course."
+- tapOn: "Create Course"
+- # Manage Modules
+- tapOn: "Add Module"
+- typeText: "Architecture"
+- tapOn: "Save Module"
+- # Grade Submission
+- tapOn: "Dashboard"
+- tapOn: "To Grade"
+- tapOn: "Jane Doe - First Project"
+- tapOn: "Score"
+- typeText: "95"
+- tapOn: "Feedback"
+- typeText: "Great job on the architecture!"
+- tapOn: "Submit Grade"
+- assertVisible: "Grade submitted"

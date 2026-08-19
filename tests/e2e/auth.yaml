@@ -1,0 +1,27 @@
+appId: com.lms.app
+---
+- clearState
+- launchApp
+- tapOn: "Sign Up"
+- typeText: "Jane Doe"
+- tapOn: "Phone Number"
+- typeText: "1234567891"
+- tapOn: "Password"
+- typeText: "password123"
+- tapOn: "Role"
+- tapOn: "Student"
+- tapOn: "Create Account"
+- assertVisible: "Course Catalog"
+- tapOn: "Profile"
+- tapOn: "Log Out"
+- tapOn: "Log In"
+- typeText: "1234567891"
+- tapOn: "Password"
+- typeText: "password123"
+- tapOn: "Login"
+- assertVisible: "Course Catalog"
+- tapOn: "Profile"
+- tapOn: "Change Password"
+- typeText: "newpassword123"
+- tapOn: "Update Password"
+- assertVisible: "Password changed successfully"
