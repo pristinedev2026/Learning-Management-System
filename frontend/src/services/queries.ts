@@ -84,6 +84,14 @@ export function useInstructorAnalytics(instructorId: string) {
   });
 }
 
+export function useInstructorStudents(instructorId: string) {
+  return useQuery({
+    queryKey: ['instructor-students', instructorId],
+    queryFn: () => api.fetchInstructorStudents(instructorId),
+    enabled: !!instructorId,
+  });
+}
+
 export function useCreateCourse() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -129,6 +137,16 @@ export function useCreateLesson() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.createLesson,
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.course(variables.courseId) });
+    },
+  });
+}
+
+export function useUpdateLesson() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.updateLesson,
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.course(variables.courseId) });
     },
@@ -293,6 +311,12 @@ export function useChatMessages(otherUserId: string) {
     queryKey: ['chat', otherUserId],
     queryFn: () => api.fetchChatMessages(otherUserId),
     enabled: !!otherUserId,
+  });
+}
+
+export function useUploadImage() {
+  return useMutation({
+    mutationFn: (fileUri: string) => api.uploadImage(fileUri),
   });
 }
 

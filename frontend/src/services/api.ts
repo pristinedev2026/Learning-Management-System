@@ -185,6 +185,10 @@ export async function fetchInstructorAnalytics(
   return request(`/courses/instructor/${instructorId}/analytics`, { auth: true });
 }
 
+export async function fetchInstructorStudents(instructorId: string): Promise<any[]> {
+  return request(`/courses/instructor/${instructorId}/students`, { auth: true });
+}
+
 export async function createCourse(params: {
   title: string;
   description: string;
@@ -232,6 +236,24 @@ export async function createLesson(params: {
   const { courseId, moduleId, ...data } = params;
   return request(`/courses/${courseId}/modules/${moduleId}/lessons`, {
     method: 'POST',
+    body: data,
+    auth: true,
+  });
+}
+
+export async function updateLesson(params: {
+  lessonId: string;
+  courseId: string;
+  moduleId: string;
+  title?: string;
+  type?: 'video' | 'text' | 'pdf';
+  order?: number;
+  content?: string;
+  durationMinutes?: number;
+}): Promise<any> {
+  const { lessonId, courseId, moduleId, ...data } = params;
+  return request(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}`, {
+    method: 'PATCH',
     body: data,
     auth: true,
   });
@@ -468,6 +490,38 @@ export async function fetchConversations(): Promise<any[]> {
 
 export async function fetchChatMessages(otherUserId: string): Promise<any[]> {
   return request(`/messages/${otherUserId}`, { auth: true });
+}
+
+// ---- Uploads ----
+
+export async function uploadImage(fileUri: string): Promise<{ url: string }> {
+  const formData = new FormData();
+  const filename = fileUri.split('/').pop() ?? 'image.jpg';
+  const match = /\.(\w+)$/.exec(filename);
+  const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+  formData.append('file', {
+    uri: fileUri,
+    name: filename,
+    type,
+  } as any);
+
+  const token = getAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${API_BASE_URL}/uploads/image`, {
+    method: 'POST',
+    body: formData,
+    headers,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Upload failed');
+  }
+
+  return response.json();
 }
 
 // ---- Payments ----

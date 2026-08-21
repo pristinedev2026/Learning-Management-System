@@ -4,9 +4,10 @@ import { CoursesController } from './courses.controller';
 import { ReviewsService } from './reviews.service';
 import { ReviewsController } from './reviews.controller';
 import { GamificationModule } from '../gamification/gamification.module';
+import { UploadsModule } from '../uploads/uploads.module';
 
 @Module({
-  imports: [GamificationModule],
+  imports: [GamificationModule, UploadsModule],
   providers: [CoursesService, ReviewsService],
   controllers: [CoursesController, ReviewsController],
   exports: [CoursesService],

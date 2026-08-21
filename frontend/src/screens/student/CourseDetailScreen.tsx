@@ -9,6 +9,7 @@ import {
   Pressable,
   Alert,
   TextInput,
+  Image,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { StudentCatalogStackParamList } from '@/navigation/StudentTabs';
@@ -30,6 +31,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { colors, spacing, typography } from '@/theme/tokens';
 import { StarRating } from '@/components/StarRating';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = NativeStackScreenProps<StudentCatalogStackParamList, 'CourseDetail'>;
 
@@ -99,6 +101,13 @@ export function CourseDetailScreen({ route, navigation }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
+        {course.coverImageUrl ? (
+          <Image source={{ uri: course.coverImageUrl }} style={styles.coverImage} />
+        ) : (
+          <View style={[styles.coverImage, styles.imagePlaceholder]}>
+            <Ionicons name="image-outline" size={48} color={colors.inkMuted} />
+          </View>
+        )}
         <Tag label={course.category} tone="info" />
         <View style={styles.titleRow}>
           <Text style={[typography.display, { flex: 1 }]}>{course.title}</Text>
@@ -296,6 +305,19 @@ export function CourseDetailScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xxl },
+  coverImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    marginBottom: spacing.md,
+  },
+  imagePlaceholder: {
+    backgroundColor: colors.gray100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   priceTag: { ...typography.title, color: colors.success, fontWeight: 'bold' },
   instructor: { ...typography.body, color: colors.inkMuted },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View, Image } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Card } from '@/components/Card';
 import { ProgressBar, Tag } from '@/components/StatusPieces';
@@ -20,7 +20,7 @@ export function MyCoursesScreen({ navigation }: Props) {
   const { data: enrollments, isLoading } = useMyEnrollments(user?.id ?? '');
   const { data: allCourses } = useCourseCatalog();
 
-  const courseTitle = (courseId: string) => allCourses?.find((c) => c.id === courseId)?.title ?? '…';
+  const courseData = (courseId: string) => allCourses?.find((c) => c.id === courseId);
 
   if (isLoading) {
     return (
@@ -43,16 +43,20 @@ export function MyCoursesScreen({ navigation }: Props) {
             <Text style={styles.emptyBody}>Enroll in something from the catalog to get started.</Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <EnrollmentCard
-            enrollment={item}
-            title={courseTitle(item.courseId)}
-            onPress={() => navigation.getParent()?.navigate('Catalog', {
-              screen: 'CourseDetail',
-              params: { courseId: item.courseId },
-            })}
-          />
-        )}
+        renderItem={({ item }) => {
+          const course = courseData(item.courseId);
+          return (
+            <EnrollmentCard
+              enrollment={item}
+              title={course?.title ?? '…'}
+              coverImageUrl={course?.coverImageUrl}
+              onPress={() => navigation.getParent()?.navigate('Catalog', {
+                screen: 'CourseDetail',
+                params: { courseId: item.courseId },
+              })}
+            />
+          );
+        }}
       />
     </SafeAreaView>
   );
@@ -61,10 +65,12 @@ export function MyCoursesScreen({ navigation }: Props) {
 function EnrollmentCard({
   enrollment,
   title,
+  coverImageUrl,
   onPress,
 }: {
   enrollment: Enrollment;
   title: string;
+  coverImageUrl?: string;
   onPress: () => void;
 }) {
   const [isGenerating, setIsGenerating] = React.useState(false);
@@ -93,13 +99,21 @@ function EnrollmentCard({
     >
       <Card style={styles.card}>
         <View style={styles.cardTop}>
-          <View style={styles.titleWithIcon}>
-            <Ionicons name="school-outline" size={20} color={colors.primary} style={{ marginRight: spacing.xs }} />
-            <Text style={[typography.subtitle, { flex: 1 }]} numberOfLines={1}>
-              {title}
-            </Text>
+          <View style={styles.thumbnail}>
+            {coverImageUrl ? (
+              <Image source={{ uri: coverImageUrl }} style={styles.thumbnailImage} />
+            ) : (
+              <Ionicons name="school-outline" size={20} color={colors.primary} />
+            )}
           </View>
-          <Tag label={enrollment.progressPercent === 100 ? 'Completed' : 'In progress'} tone={tone} />
+          <View style={{ flex: 1 }}>
+            <View style={styles.titleRow}>
+              <Text style={[typography.subtitle, { flex: 1 }]} numberOfLines={1}>
+                {title}
+              </Text>
+              <Tag label={enrollment.progressPercent === 100 ? 'Completed' : 'In progress'} tone={tone} />
+            </View>
+          </View>
         </View>
         <ProgressBar percent={enrollment.progressPercent} />
         <View style={styles.cardBottom}>
@@ -131,8 +145,21 @@ const styles = StyleSheet.create({
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
   pressable: { marginBottom: spacing.md },
   card: { gap: spacing.sm },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
-  titleWithIcon: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  thumbnail: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: colors.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
+  },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
   cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   progressLabel: { ...typography.caption },
   certButton: {

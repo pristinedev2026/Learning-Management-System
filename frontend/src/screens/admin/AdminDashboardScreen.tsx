@@ -79,8 +79,8 @@ function StatCard({
 function RoleCard({ label, count, icon, color, loading }: { label: string; count: number; icon: any; color: string; loading?: boolean }) {
   return (
     <Card style={styles.roleCard}>
-      <View style={[styles.roleIcon, { backgroundColor: color + '20' }]}>
-        <Ionicons name={icon} size={24} color={color} />
+      <View style={[styles.roleIcon, { backgroundColor: (color || colors.primary) + '20' }]}>
+        <Ionicons name={icon} size={24} color={color || colors.primary} />
       </View>
       <View>
         <Text style={typography.subtitle}>{label}</Text>

@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
   ScrollView,
+  Image,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { StudentCatalogStackParamList } from '@/navigation/StudentTabs';
@@ -99,6 +100,10 @@ export function CourseCatalogScreen({ navigation }: Props) {
 }
 
 function CourseCard({ course, onPress }: { course: Course; onPress: () => void }) {
+  const coverUri = course.coverImageUrl && course.coverImageUrl.trim() !== ''
+    ? { uri: course.coverImageUrl }
+    : null;
+
   return (
     <Pressable
       onPress={onPress}
@@ -107,7 +112,17 @@ function CourseCard({ course, onPress }: { course: Course; onPress: () => void }
     >
       <Card style={styles.card}>
         <View style={styles.thumbnail}>
-          <Ionicons name="book-outline" size={32} color={colors.primary} />
+          {coverUri ? (
+            <Image
+              source={coverUri}
+              style={styles.coverImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.iconPlaceholder}>
+               <Ionicons name="book-outline" size={32} color={colors.primary} />
+            </View>
+          )}
         </View>
         <View style={styles.cardBody}>
           <View style={styles.cardHeader}>
@@ -162,6 +177,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryMuted,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  coverImage: {
+    width: '100%',
+    height: '100%',
+  },
+  iconPlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryMuted,
   },
   thumbnailInitial: { ...typography.title, color: colors.primary },
   cardBody: { flex: 1, gap: spacing.xs },

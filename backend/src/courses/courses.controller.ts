@@ -1,7 +1,13 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { CoursesService } from './courses.service';
-import { CreateCourseDto, CreateLessonDto, CreateModuleDto, UpdateCourseDto } from './dto/course.dto';
+import {
+  CreateCourseDto,
+  CreateLessonDto,
+  CreateModuleDto,
+  UpdateCourseDto,
+  UpdateLessonDto,
+} from './dto/course.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -31,6 +37,11 @@ export class CoursesController {
   @Get('instructor/:instructorId/analytics')
   analytics(@Param('instructorId') instructorId: string) {
     return this.coursesService.getInstructorAnalytics(instructorId);
+  }
+
+  @Get('instructor/:instructorId/students')
+  students(@Param('instructorId') instructorId: string) {
+    return this.coursesService.getInstructorStudents(instructorId);
   }
 
   @UseGuards(OptionalJwtAuthGuard)
@@ -81,6 +92,19 @@ export class CoursesController {
     @Body() dto: CreateLessonDto
   ) {
     return this.coursesService.addLesson(user.sub, courseId, moduleId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.instructor)
+  @Patch(':id/modules/:moduleId/lessons/:lessonId')
+  updateLesson(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') courseId: string,
+    @Param('moduleId') moduleId: string,
+    @Param('lessonId') lessonId: string,
+    @Body() dto: UpdateLessonDto
+  ) {
+    return this.coursesService.updateLesson(user.sub, courseId, moduleId, lessonId, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

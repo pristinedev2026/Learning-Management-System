@@ -8,15 +8,20 @@ import {
   View,
   TextInput,
   Alert,
+  Image,
+  Pressable,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useForm, Controller } from 'react-hook-form';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { InstructorCoursesStackParamList } from '@/navigation/InstructorTabs';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { useCreateCourse, useUpdateCourse } from '@/services/queries';
+import { useCreateCourse, useUpdateCourse, useUploadImage } from '@/services/queries';
 import { colors, spacing, typography } from '@/theme/tokens';
+import { API_BASE_URL } from '@/services/config';
 import type { Course } from '@/types';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = NativeStackScreenProps<InstructorCoursesStackParamList, 'CourseEditor'>;
 
@@ -36,9 +41,10 @@ export function CourseEditorScreen({ route, navigation }: Props) {
   const { mode, course } = route.params;
   const createMutation = useCreateCourse();
   const updateMutation = useUpdateCourse();
-  const isLoading = createMutation.isPending || updateMutation.isPending;
+  const uploadMutation = useUploadImage();
+  const isLoading = createMutation.isPending || updateMutation.isPending || uploadMutation.isPending;
 
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<CourseFormData>({
+  const { control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CourseFormData>({
     defaultValues: {
       title: course?.title ?? '',
       description: course?.description ?? '',
@@ -47,6 +53,8 @@ export function CourseEditorScreen({ route, navigation }: Props) {
       coverImageUrl: course?.coverImageUrl ?? '',
     },
   });
+
+  const coverImageUrl = watch('coverImageUrl');
 
   useEffect(() => {
     if (course) {
@@ -59,6 +67,29 @@ export function CourseEditorScreen({ route, navigation }: Props) {
       });
     }
   }, [course, reset]);
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const selectedImage = result.assets[0].uri;
+      try {
+        const { url } = await uploadMutation.mutateAsync(selectedImage);
+        // Prepend base URL if it's a relative path from the server
+        const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL.replace('/api', '')}${url}`;
+        console.log('Uploaded image URL:', fullUrl);
+        setValue('coverImageUrl', fullUrl);
+      } catch (error) {
+        console.error('Upload error:', error);
+        Alert.alert('Upload Failed', 'Could not upload image. Please try again.');
+      }
+    }
+  };
 
   const onSubmit = async (data: CourseFormData) => {
     try {
@@ -183,23 +214,39 @@ export function CourseEditorScreen({ route, navigation }: Props) {
             {errors.category && <Text style={styles.error}>{errors.category.message}</Text>}
           </View>
 
-          {/* Cover Image URL (optional) */}
+          {/* Cover Image Upload */}
           <View style={styles.field}>
-            <Text style={styles.label}>Cover Image URL (optional)</Text>
-            <Controller
-              control={control}
-              name="coverImageUrl"
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  style={styles.input}
-                  placeholder="https://example.com/image.jpg"
-                  placeholderTextColor={colors.inkMuted}
-                  value={value}
-                  onChangeText={onChange}
-                  editable={!isLoading}
+            <Text style={styles.label}>Course Cover Image</Text>
+            {coverImageUrl ? (
+              <View style={styles.imagePreviewContainer}>
+                <Image
+                  source={{ uri: coverImageUrl }}
+                  style={styles.imagePreview}
+                  resizeMode="cover"
                 />
-              )}
-            />
+                <Pressable
+                  onPress={() => setValue('coverImageUrl', '')}
+                  style={styles.removeImageBtn}
+                >
+                  <Ionicons name="close-circle" size={24} color={colors.danger} />
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                onPress={pickImage}
+                style={styles.uploadPlaceholder}
+                disabled={isLoading}
+              >
+                {uploadMutation.isPending ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : (
+                  <>
+                    <Ionicons name="camera-outline" size={32} color={colors.inkMuted} />
+                    <Text style={typography.caption}>Upload Image (16:9 recommended)</Text>
+                  </>
+                )}
+              </Pressable>
+            )}
           </View>
         </Card>
 
@@ -248,4 +295,36 @@ const styles = StyleSheet.create({
 
   submitButton: { marginTop: spacing.lg },
   cancelButton: { marginTop: spacing.md },
+
+  uploadPlaceholder: {
+    height: 150,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+    gap: spacing.xs,
+  },
+  imagePreviewContainer: {
+    height: 150,
+    borderRadius: 8,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: colors.gray100,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+  },
+  removeImageBtn: {
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
+    backgroundColor: 'white',
+    borderRadius: 12,
+  },
 });

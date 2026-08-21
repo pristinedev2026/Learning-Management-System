@@ -1,20 +1,31 @@
 import React from 'react';
-import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, View, RefreshControl } from 'react-native';
 import { Card } from '@/components/Card';
 import { Tag } from '@/components/StatusPieces';
-import { useInstructorCourses, useInstructorStats } from '@/services/queries';
+import { useInstructorCourses, useInstructorStats, useInstructorStudents } from '@/services/queries';
 import { useAuthStore } from '@/store/authStore';
 import { colors, spacing, typography } from '@/theme/tokens';
 import { Ionicons } from '@expo/vector-icons';
 
 export function DashboardScreen() {
   const user = useAuthStore((s) => s.user);
-  const { data: courses, isLoading: loadingCourses } = useInstructorCourses(user?.id ?? '');
-  const { data: stats, isLoading: loadingStats } = useInstructorStats(user?.id ?? '');
+  const { data: courses, isLoading: loadingCourses, refetch: refetchCourses } = useInstructorCourses(user?.id ?? '');
+  const { data: stats, isLoading: loadingStats, refetch: refetchStats } = useInstructorStats(user?.id ?? '');
+  const { data: students, isLoading: loadingStudents, refetch: refetchStudents } = useInstructorStudents(user?.id ?? '');
+
+  const [refreshing, setRefreshing] = React.useState(false);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([refetchCourses(), refetchStats(), refetchStudents()]);
+    setRefreshing(false);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         <Text style={typography.display}>Welcome back{user ? `, ${user.name.split(' ')[0]}` : ''}</Text>
 
         <View style={styles.statsRow}>
@@ -52,6 +63,29 @@ export function DashboardScreen() {
               <Tag label={course.category} tone="info" />
             </Card>
           ))
+        )}
+
+        <Text style={[typography.subtitle, styles.sectionTitle]}>Enrolled students</Text>
+        {loadingStudents ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : students && students.length > 0 ? (
+          students.map((student) => (
+            <Card key={student.id} style={styles.studentCard}>
+              <View style={styles.studentContent}>
+                <Ionicons name="person-circle-outline" size={32} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={typography.subtitle}>{student.name}</Text>
+                  <Text style={styles.studentMeta} numberOfLines={1}>
+                    {student.enrolledCourses.join(', ')}
+                  </Text>
+                </View>
+              </View>
+            </Card>
+          ))
+        ) : (
+          <View style={styles.card}>
+             <Text style={typography.caption}>No students found.</Text>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -95,4 +129,7 @@ const styles = StyleSheet.create({
   sectionTitle: { marginTop: spacing.xl, marginBottom: spacing.sm },
   courseCard: { marginBottom: spacing.sm, gap: spacing.xs, alignItems: 'flex-start' },
   courseMeta: { ...typography.caption },
+  studentCard: { marginBottom: spacing.sm },
+  studentContent: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  studentMeta: { ...typography.caption, color: colors.inkMuted },
 });

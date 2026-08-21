@@ -28,3 +28,11 @@ export class CreateLessonDto {
   @IsString() content!: string;
   @IsOptional() @IsInt() durationMinutes?: number;
 }
+
+export class UpdateLessonDto {
+  @IsOptional() @IsString() title?: string;
+  @IsOptional() @IsString() type?: 'video' | 'text' | 'pdf';
+  @IsOptional() @IsInt() @Min(1) order?: number;
+  @IsOptional() @IsString() content?: string;
+  @IsOptional() @IsInt() durationMinutes?: number;
+}

@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.yourorg.lms",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF"
       },

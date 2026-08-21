@@ -14,11 +14,18 @@ import { StudentModule } from './student/student.module';
 import { PaymentsModule } from './payments/payments.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { MessagesModule } from './messages/messages.module';
+import { UploadsModule } from './uploads/uploads.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
     PrismaModule,
     AuthModule,
     CoursesModule,
@@ -32,6 +39,7 @@ import { MessagesModule } from './messages/messages.module';
     PaymentsModule,
     GamificationModule,
     MessagesModule,
+    UploadsModule,
   ],
 })
 export class AppModule {}

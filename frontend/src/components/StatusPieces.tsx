@@ -6,13 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 type Tone = 'progress' | 'success' | 'danger' | 'info' | 'neutral';
 
 export function Tag({ label, tone = 'neutral', showIcon = true }: { label: string; tone?: Tone; showIcon?: boolean }) {
-  const { colors, radius, spacing, typography } = useTheme();
+  const { colors, radius, spacing, typography, isDark } = useTheme();
 
   const toneColors: Record<Tone, { bg: string; fg: string; icon?: any }> = {
-    progress: { bg: colors.isDark ? '#4A3215' : '#F6E9D8', fg: colors.progress, icon: 'time-outline' },
-    success: { bg: colors.isDark ? '#123D33' : '#DCEFEC', fg: colors.success, icon: 'checkmark-circle-outline' },
-    danger: { bg: colors.isDark ? '#4D1A12' : '#F5E1DC', fg: colors.danger, icon: 'alert-circle-outline' },
-    info: { bg: colors.isDark ? '#152C4D' : '#DEEAF6', fg: colors.info, icon: 'information-circle-outline' },
+    progress: { bg: isDark ? '#4A3215' : '#F6E9D8', fg: colors.progress, icon: 'time-outline' },
+    success: { bg: isDark ? '#123D33' : '#DCEFEC', fg: colors.success, icon: 'checkmark-circle-outline' },
+    danger: { bg: isDark ? '#4D1A12' : '#F5E1DC', fg: colors.danger, icon: 'alert-circle-outline' },
+    info: { bg: isDark ? '#152C4D' : '#DEEAF6', fg: colors.info, icon: 'information-circle-outline' },
     neutral: { bg: colors.gray100, fg: colors.gray700 },
   };
 

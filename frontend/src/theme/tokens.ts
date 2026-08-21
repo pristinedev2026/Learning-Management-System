@@ -20,6 +20,8 @@ export const lightColors = {
   success: '#1E7A6C',
   danger: '#B3412C',
   info: '#2E6BB3',
+  warning: '#C77D2E', // Amber
+  error: '#B3412C',   // Red
   white: '#FFFFFF',
   gray100: '#F3F3F7',
   gray300: '#D6D7E3',
@@ -39,6 +41,8 @@ export const darkColors = {
   success: '#34A853',
   danger: '#F56C6C',
   info: '#409EFF',
+  warning: '#E6A23C',
+  error: '#F56C6C',
   white: '#FFFFFF',
   gray100: '#1E203D',
   gray300: '#2E3152',

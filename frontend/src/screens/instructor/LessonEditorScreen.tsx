@@ -15,7 +15,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { InstructorCoursesStackParamList } from '@/navigation/InstructorTabs';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { useCreateLesson } from '@/services/queries';
+import { useCreateLesson, useUpdateLesson } from '@/services/queries';
 import { colors, spacing, typography } from '@/theme/tokens';
 import type { LessonType, Lesson } from '@/types';
 
@@ -36,7 +36,8 @@ type LessonFormData = {
 export function LessonEditorScreen({ route, navigation }: Props) {
   const { courseId, moduleId, mode, lesson } = route.params;
   const createMutation = useCreateLesson();
-  const isLoading = createMutation.isPending;
+  const updateMutation = useUpdateLesson();
+  const isLoading = createMutation.isPending || updateMutation.isPending;
 
   const { control, handleSubmit, reset, watch, formState: { errors } } = useForm<LessonFormData>({
     defaultValues: {
@@ -64,8 +65,22 @@ export function LessonEditorScreen({ route, navigation }: Props) {
 
   const onSubmit = async (data: LessonFormData) => {
     const order = parseInt(data.order, 10);
-    if (!data.title || !data.content || !order || order < 1) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    if (!data.title.trim()) {
+      Alert.alert('Error', 'Lesson title is required');
+      return;
+    }
+    if (isNaN(order) || order < 1) {
+      Alert.alert('Error', 'Order must be a valid number greater than 0');
+      return;
+    }
+    if (!data.content.trim()) {
+      Alert.alert('Error', 'Content is required');
+      return;
+    }
+
+    const durationMinutes = data.durationMinutes ? parseInt(data.durationMinutes, 10) : undefined;
+    if (data.durationMinutes && isNaN(durationMinutes!)) {
+      Alert.alert('Error', 'Duration must be a valid number');
       return;
     }
 
@@ -78,7 +93,7 @@ export function LessonEditorScreen({ route, navigation }: Props) {
           type: data.type,
           order,
           content: data.content,
-          durationMinutes: data.durationMinutes ? parseInt(data.durationMinutes, 10) : undefined,
+          durationMinutes,
         });
         Alert.alert('Success', 'Lesson created!', [
           {
@@ -86,8 +101,24 @@ export function LessonEditorScreen({ route, navigation }: Props) {
             onPress: () => navigation.goBack(),
           },
         ]);
+      } else if (mode === 'edit' && lesson) {
+        await updateMutation.mutateAsync({
+          lessonId: lesson.id,
+          courseId,
+          moduleId,
+          title: data.title,
+          type: data.type,
+          order,
+          content: data.content,
+          durationMinutes,
+        });
+        Alert.alert('Success', 'Lesson updated!', [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
+        ]);
       }
-      // TODO: Add edit support once backend has PATCH endpoint for lessons
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to save lesson');
     }
@@ -236,7 +267,7 @@ export function LessonEditorScreen({ route, navigation }: Props) {
 
         {/* Submit Buttons */}
         <Button
-          label={isLoading ? 'Saving...' : 'Create Lesson'}
+          label={isLoading ? 'Saving...' : mode === 'create' ? 'Create Lesson' : 'Update Lesson'}
           onPress={handleSubmit(onSubmit)}
           loading={isLoading}
           style={styles.submitButton}
@@ -268,7 +299,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     fontSize: 14,
     color: colors.ink,
-    backgroundColor: colors.background,
+    backgroundColor: colors.gray100,
   },
   textArea: {
     minHeight: 150,

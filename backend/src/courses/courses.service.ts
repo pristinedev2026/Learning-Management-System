@@ -1,14 +1,22 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GamificationService } from '../gamification/gamification.service';
-import type { CreateCourseDto, CreateLessonDto, CreateModuleDto, UpdateCourseDto } from './dto/course.dto';
+import { UploadsService } from '../uploads/uploads.service';
+import type {
+  CreateCourseDto,
+  CreateLessonDto,
+  CreateModuleDto,
+  UpdateCourseDto,
+  UpdateLessonDto,
+} from './dto/course.dto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CoursesService {
   constructor(
     private prisma: PrismaService,
-    private gamification: GamificationService
+    private gamification: GamificationService,
+    private uploads: UploadsService
   ) {}
 
   private getCourseInclude(studentId?: string): Prisma.CourseInclude {
@@ -108,14 +116,21 @@ export class CoursesService {
       where: { instructorId },
       select: {
         id: true,
-        _count: {
-          select: { enrollments: true },
-        },
       },
     });
 
     const totalCourses = courses.length;
-    const totalStudents = courses.reduce((sum, c) => sum + c._count.enrollments, 0);
+
+    const uniqueStudents = await this.prisma.enrollment.findMany({
+      where: {
+        course: { instructorId },
+      },
+      select: { studentId: true },
+      distinct: ['studentId'],
+    });
+
+    const totalStudents = uniqueStudents.length;
+    console.log(`Instructor ${instructorId} unique stats: Courses=${totalCourses}, Students=${totalStudents}`);
 
     const toGrade = await this.prisma.submission.count({
       where: {
@@ -179,6 +194,59 @@ export class CoursesService {
     return { courseEngagement, activityTrend };
   }
 
+  async getInstructorStudents(instructorId: string) {
+    // Get all courses owned by this instructor
+    const courses = await this.prisma.course.findMany({
+      where: { instructorId },
+      select: { id: true, title: true },
+    });
+
+    const courseIds = courses.map((c) => c.id);
+    const courseTitles = courses.reduce((acc, c) => ({ ...acc, [c.id]: c.title }), {} as any);
+
+    // Get all enrollments for these courses
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: {
+        courseId: { in: courseIds },
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+          },
+        },
+      },
+      orderBy: { enrolledAt: 'desc' },
+    });
+
+    const studentMap = new Map();
+    enrollments.forEach((e) => {
+      const courseTitle = courseTitles[e.courseId] || 'Unknown Course';
+      if (!studentMap.has(e.studentId)) {
+        studentMap.set(e.studentId, {
+          id: e.student.id,
+          name: e.student.name,
+          email: e.student.email,
+          phone: e.student.phone,
+          avatarUrl: e.student.avatarUrl,
+          enrolledCourses: [courseTitle],
+          firstEnrolledAt: e.enrolledAt,
+        });
+      } else {
+        const student = studentMap.get(e.studentId);
+        if (!student.enrolledCourses.includes(courseTitle)) {
+          student.enrolledCourses.push(courseTitle);
+        }
+      }
+    });
+
+    return Array.from(studentMap.values());
+  }
+
   async create(instructorId: string, dto: CreateCourseDto) {
     const course = await this.prisma.course.create({
       data: { ...dto, instructorId },
@@ -188,7 +256,13 @@ export class CoursesService {
   }
 
   async update(instructorId: string, courseId: string, dto: UpdateCourseDto) {
-    await this.assertOwnership(instructorId, courseId);
+    const existingCourse = await this.assertOwnership(instructorId, courseId);
+
+    // If a new image is being set, delete the old one
+    if (dto.coverImageUrl && existingCourse.coverImageUrl && existingCourse.coverImageUrl !== dto.coverImageUrl) {
+      this.uploads.deleteFile(existingCourse.coverImageUrl);
+    }
+
     const course = await this.prisma.course.update({
       where: { id: courseId },
       data: dto,
@@ -198,7 +272,13 @@ export class CoursesService {
   }
 
   async remove(instructorId: string, courseId: string) {
-    await this.assertOwnership(instructorId, courseId);
+    const existingCourse = await this.assertOwnership(instructorId, courseId);
+
+    // Delete the image file if it exists
+    if (existingCourse.coverImageUrl) {
+      this.uploads.deleteFile(existingCourse.coverImageUrl);
+    }
+
     await this.prisma.course.delete({ where: { id: courseId } });
     return { success: true };
   }
@@ -215,6 +295,29 @@ export class CoursesService {
       throw new NotFoundException('Module not found on this course.');
     }
     return this.prisma.lesson.create({ data: { ...dto, moduleId } });
+  }
+
+  async updateLesson(
+    instructorId: string,
+    courseId: string,
+    moduleId: string,
+    lessonId: string,
+    dto: UpdateLessonDto
+  ) {
+    await this.assertOwnership(instructorId, courseId);
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: { module: true },
+    });
+
+    if (!lesson || lesson.moduleId !== moduleId || lesson.module.courseId !== courseId) {
+      throw new NotFoundException('Lesson not found in the specified module/course.');
+    }
+
+    return this.prisma.lesson.update({
+      where: { id: lessonId },
+      data: dto,
+    });
   }
 
   async toggleLessonCompletion(studentId: string, lessonId: string) {

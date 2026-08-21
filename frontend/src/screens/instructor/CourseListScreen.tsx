@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   category: { ...typography.caption, backgroundColor: colors.primary + '20', paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 4 },
   enrollment: { ...typography.caption, color: colors.inkMuted, fontWeight: '600' },
 
-  actions: { flexDirection: 'row', gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, paddingTopMargin: spacing.md },
+  actions: { flexDirection: 'row', gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md },
   actionButton: { flex: 1, paddingVertical: spacing.sm, alignItems: 'center', borderRadius: 6 },
   actionText: { ...typography.caption, color: colors.primary, fontWeight: '600' },
   deleteButton: { backgroundColor: colors.error + '10' },
